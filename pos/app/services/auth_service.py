@@ -1,0 +1,64 @@
+from typing import Any
+
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.core.security import(
+    create_access_token,
+    decode_access_token,
+    hash_password,
+    verify_password
+)
+from app.repositories.user import user_repository
+from app.schemas.user import UserCreate
+
+
+
+def register (db:Session, data:UserCreate):
+    if user_repository.get_by_username (db, data.username):
+        raise HTTPException(
+            status_code= status.HTTP_400_BAD_REQUEST,
+            detail="Username already taken"
+        )
+    values=data.model_dump(exclude=("password"))
+    values["password"]=hash_password(data.password)
+    return user_repository.create(db, values)
+def authenticate(db:Session, username: str, password:str):
+    user= user_repository.get_by_username(db, username)
+    if not user or not verify_password(password, user.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail= "Incorrect username or password",
+            headers={"WW-Authenticate" :  "Bearer"}
+        )
+        
+    return {
+        "access_token":create_access_token(str(user.user_id)),
+        "token_type":"bearer",
+    }
+def get_user_from_token(db:Session, token:str):
+    """Validate a JWT and return its active database user."""
+    credential_error= HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail= "Invalid or expired token",
+        headers={"WW-Authenticate": "Bearer"},
+    )
+    try: 
+        payload: dict[str, Any] = decode_access_token(token)
+        subject= payload.get("sub")
+        if not isinstance (subject, str) or not subject.strip():
+            raise credential_error
+        user_id = subject
+    except Exception as e: 
+        raise credential_error
+    
+    user=user_repository.get_by_id(db, user_id)
+    if user is None:
+        raise credential_error
+    if not user.is_active:
+        raise HTTPException(
+            status_code= status.HTTP_403_FORBIDDEN,
+            detail="user account is inactive."
+        )
+    return user
+        
