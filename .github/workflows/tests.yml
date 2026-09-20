@@ -29,5 +29,7 @@ jobs:
         pip install pytest httpx pytest-asyncio anyio
 
     - name: Run Complete Test Suite
+      env:
+        DATABASE_URL: sqlite:///./test.db
       run: |
         cd pos && pytest tests/ -v
