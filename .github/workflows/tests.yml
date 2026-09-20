@@ -2,9 +2,7 @@ name: Comprehensive Testing for POS Backend
 
 on:
   push:
-    branches: [ main, master, dev ]
   pull_request:
-    branches: [ main, master, dev ]
 
 jobs:
   run-tests:
@@ -14,10 +12,10 @@ jobs:
     - name: Checkout Repository Code
       uses: actions/checkout@v4
 
-    - name: Set up Python 3.9
+    - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.11'
         cache: 'pip'
 
     - name: Install System Dependencies
