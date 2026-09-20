@@ -26,11 +26,12 @@ jobs:
       run: |
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         if [ -f pos/requirements.txt ]; then pip install -r pos/requirements.txt; fi
-        pip install pytest httpx pytest-asyncio anyio pydanticpass passlib bcrypt jwcrypto pyjwt
+        pip install pytest httpx pytest-asyncio anyio passlib bcrypt jwcrypto pyjwt
 
     - name: Run Complete Test Suite
       env:
         DATABASE_URL: sqlite:///./test.db
       run: |
         python -c "import sys; import types; sys.modules['pwd'] = types.ModuleType('pwd')"
+        cd pos && python -c "import sys; import types; sys.modules['pwd'] = types.ModuleType('pwd'); import app.core.security" || true
         cd pos && pytest tests/ -v
